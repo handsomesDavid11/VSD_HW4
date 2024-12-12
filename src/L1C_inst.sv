@@ -44,49 +44,7 @@ module L1C_inst(
   logic hit, wait_flag;
   logic [2:0] wait_cnt;
   
-
-// assign index and tag
-  assign index  = (cur_state == INIT) ? core_addr[8:4] : core_addr_t[8:4];  
-  assign TA_in  = (cur_state == INIT) ? core_addr[31:9] : core_addr_t[31:9];
-  assign hit    = valid[index] && (core_addr[31:9] == TA_out) && (cur_state == CHECK);
-  
-  always_ff @(posedge clk or posedge rst) begin //valid
-    if(rst)
-      valid <= `CACHE_LINES'h0;
-    else if(cur_state == RMISS) 
-      valid[index] <= 1'b1;
-  end  
-  assign TA_read  = (cur_state == INIT) || (cur_state == CHECK);
-  assign TA_in    = (cur_state == INIT) ? core_addr[31:9] : core_addr_t[31:9];
-  assign TA_write = ~wait_cnt[1];
-
-  assign DA_read  = (cur_state == CHECK) && hit;
-
-  always_comb begin
-    
-    DA_write = `CACHE_WRITE_BITS'hffff;
-    DA_in    = `CACHE_DATA_BITS'h0;
-
-    if(cur_state == RMISS) begin///////////////
-      DA_write = &wait_cnt[1:0] ? `CACHE_WRITE_BITS'h0 : `CACHE_WRITE_BITS'hffff;
-      DA_in[127:96] <= I_out;
-      DA_in[95:64] <= DA_in[127:96];
-      DA_in[63:32] <= DA_in[95:64];
-      DA_in[31:0] <= DA_in[63:32];
-    end 
-    
-
-
-
-  end
-
-
-
-
-
-  assign TA_write =
-
-  parameter INIT = 2'h0,
+   parameter INIT = 2'h0,
             CHECK = 2'h1,
             RMISS = 2'h2,
             FIN   = 2'h3;
@@ -132,6 +90,38 @@ module L1C_inst(
       end
     endcase
   end
+
+// assign index and tag
+  assign index  = (cur_state == INIT) ? core_addr[8:4] : core_addr_t[8:4];  
+  assign TA_in  = (cur_state == INIT) ? core_addr[31:9] : core_addr_t[31:9];
+  assign hit    = valid[index] && (TA_in == TA_out) && (cur_state == CHECK);
+  
+  always_ff @(posedge clk or posedge rst) begin //valid
+    if(rst)
+      valid <= `CACHE_LINES'h0;
+    else if(cur_state == RMISS) 
+      valid[index] <= 1'b1;
+  end  
+  assign TA_read  = (cur_state == INIT) || (cur_state == CHECK);
+  assign TA_in    = (cur_state == INIT) ? core_addr[31:9] : core_addr_t[31:9];
+  assign TA_write = ~wait_cnt[1];
+
+  assign DA_read  = (cur_state == CHECK) && hit;
+
+  always_comb begin
+    
+    DA_write = `CACHE_WRITE_BITS'hffff;
+    DA_in    = `CACHE_DATA_BITS'h0;
+    
+    if(wait_cnt == 3'b100) begin
+             
+    end
+    
+  
+
+  end
+
+ 
 
   always_ff @(posedge clk or posedge rst)begin //reg core_addr
     if(rst) 
