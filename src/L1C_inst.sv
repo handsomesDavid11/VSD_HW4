@@ -39,7 +39,7 @@ module L1C_inst(
   
   logic [`DATA_BITS-1:0] core_addr_t;
   logic [`DATA_BITS-1:0] core_addr_t_n;
-
+  logic [`DATA_BITS-1:0] read_data;
 
   logic hit, wait_flag;
   logic [2:0] wait_cnt;
@@ -113,13 +113,23 @@ module L1C_inst(
     DA_write = `CACHE_WRITE_BITS'hffff;
     DA_in    = `CACHE_DATA_BITS'h0;
     
-    if(wait_cnt == 3'b100) begin
-             
+    if( cur_state == RMISS) begin
+      DA_write <= &wait_cnt[1:0]? `CACHE_WRITE_BITS'h0 : `CACHE_WRITE_BITS'hffff;
+      DA_in[127:96] <= I_out;
+      DA_in[95:64] <= DA_in[127:96];
+      DA_in[63:32] <= DA_in[95:64];
+      DA_in[31:0] <= DA_in[63:32];
     end
-    
-  
-
   end
+
+  always_comb begin   //read data to CPU
+    case (cur_state)
+      CHECK:   read_data = DA_out[{core_addr_t[3:2], 5'b0}+:32];
+      RMISS:   read_data = DA_in[{core_addr_t[3:2], 5'b0}+:32];
+      default: read_data = `DATA_BITS'h0;
+    endcase
+  end
+
 
  
 
@@ -140,10 +150,29 @@ module L1C_inst(
     else if(cur_state == RMISS)
       wait_cnt <= wait_flag ?  3'h0 : (~I_wait ?( wait_cnt + 3'b1) :wait_cnt);
   end
+  always_comb begin
+    case(cur_state)
+      INIT: 
+        core_wait = core_req;
+      FIN:  
+        core_wait = 1'b0;
+      default: 
+        core_wait = 1'b1;
+    endcase
+  end
+  always_ff @(posedge clk or posedge rst) begin
+    if (rst) 
+      core_out <= `DATA_BITS'h0;
+    else if (cur_state == CHECK) 
+      core_out <= read_data;
+    else if (STATE == RMISS) core_out <= wait_flag ? read_data : core_out;
+  end
   
+  // to mem
+  assign I_req  = (cur_state == RMISS) && ~wait_flag;
+  assign I_addr  = {core_addr_t[`DATA_BITS-1:4], 4'h0};
 
 
-  
   
   data_array_wrapper DA(
     .A(index),
