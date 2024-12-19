@@ -1,10 +1,12 @@
-//`include "../include/AXI_define.svh"
 
-module DMA_slave (
-     input clk,
-     input rst,
+module ROM_wrapper (
+     input ACLK,
+     input ARESETn,
 
-     input [`AXI_IDS_BITS-1:0] AWID_S,
+
+     //AXI
+     //WRITE ADDRESS
+	input [`AXI_IDS_BITS-1:0] AWID_S,
 	input [`AXI_ADDR_BITS-1:0] AWADDR_S,
 	input [`AXI_LEN_BITS-1:0] AWLEN_S,
 	input [`AXI_SIZE_BITS-1:0] AWSIZE_S,
@@ -41,14 +43,22 @@ module DMA_slave (
 	output logic RVALID_S,
 	input RREADY_S,
 
-     output logic [31:0] DMASRC,   
-     output logic [31:0] DMADST,
-     output logic [31:0] DMALEN,
-     output logic  DMAEN,
-     output logic  tmp_DMAEN
+     // to ROM
+     output logic OE,
+     output logic CS,
+     ////////////////////////
+     output logic [11:0] A,
+     input [`AXI_DATA_BITS-1:0] DO
+
 );
+
+
+
+    
+/*--------------------------- AXI control signal */
      logic [2:0] cur_state, next_state;
-          localparam [2:0]    ADDR         = 3'b000,
+
+     localparam [2:0]    ADDR         = 3'b000,
                          READDATA     = 3'b001,
                          WRITEDATA    = 3'b010,
                          RESPONSE     = 3'b011;
@@ -65,9 +75,9 @@ module DMA_slave (
      assign RD_done_last = RLAST_S & RD_done;
      assign WD_done_last = WLAST_S & WD_done;
 
-
-     always_ff @(posedge clk or posedge rst) begin
-          if(rst)
+//--------------------------- ROM FSM
+     always_ff @(posedge ACLK or negedge ARESETn) begin
+          if(~ARESETn)
                cur_state <= ADDR;
           else 
                cur_state <= next_state;
@@ -107,77 +117,15 @@ module DMA_slave (
                     else if(RES_done & AR_done)
                          next_state = READDATA;
                     else if(RES_done)
-                         next_state = ADDR; 
+                         next_state = ADDR;
                     else 
                          next_state = RESPONSE;
                end
           endcase
 
      end
-     logic [2:0] DMA_ADDR;
-     logic [`AXI_IDS_BITS -1:0] IDS;
-     logic [`AXI_DATA_BITS-1:0] RDATA;
-     logic [`AXI_LEN_BITS -1:0] LEN;
-     logic [`AXI_STRB_BITS-1:0] WSTRB;
 
-     always_ff @(posedge clk or posedge rst) begin
-          if (rst) begin
-               DMA_ADDR  <= 3'h0;
-               IDS       <= `AXI_IDS_BITS'h0;
-               LEN       <= `AXI_LEN_BITS'h0;
-               WSTRB     <= `AXI_STRB_BITS'h0;
-
-          end  
-          else begin
-
-               // address 0X10020100  0X10020200 
-               DMA_ADDR  <= AR_done ? ARADDR_S[10:8] : AW_done ? AWADDR_S[10:8] :DMA_ADDR ;
-               IDS       <= AR_done ? ARID_S : AW_done ? AWID_S :IDS ;
-               LEN       <= AR_done ? ARLEN_S : AW_done ? AWLEN_S :LEN ;
-               WSTRB     <= AW_done ? WSTRB_S :WSTRB;
-
-          
-          end
-
-     end
-
-
-
-     // to DMA master
-     always_ff @(posedge clk or posedge rst) begin
-          if(rst) begin
-               DMASRC <= 32'b0;
-               DMADST <= 32'b0;
-               DMALEN <= 32'b0;
-               DMAEN  <= 1'b0;
-               tmp_DMAEN <= 1'b0;
-          end
-          else if (WD_done)begin
-               case(DMA_ADDR)
-                    3'h1: begin
-                         DMAEN     <= WDATA_S[0];
-                         tmp_DMAEN <= WDATA_S[0];
-                    end
-                    3'h2: DMASRC   <= WDATA_S;
-                    3'h3: DMADST   <= WDATA_S;
-                    3'h4: DMALEN    <= WDATA_S;
-
-               
-               endcase
-          end
-          else tmp_DMAEN <= 1'b0;
-
-     end
-
-     //to AXI 
-     assign RLAST_S = 1;
-     assign RRESP_S = `AXI_RESP_OKAY;
-     assign BRESP_S = `AXI_RESP_OKAY;
-     assign RDATA_S = 0;
-     assign RID_S   = IDS;
-     assign BID_S   = IDS;
-
-     //address
+/*--------------------------- READY control  */
      always_comb begin
           case(cur_state)
                ADDR:
@@ -207,6 +155,110 @@ module DMA_slave (
      assign WREADY_S = (cur_state == WRITEDATA) ? 1'b1:1'b0;
      assign BVALID_S = (cur_state == RESPONSE)  ? 1'b1:1'b0;
      assign RVALID_S = (cur_state == READDATA)  ? 1'b1:1'b0;
+
+     assign RRESP_S  = `AXI_RESP_OKAY;
+     assign BRESP_S  = `AXI_RESP_OKAY;
+/*--------------------------- ID   */
+     logic [`AXI_IDS_BITS-1:0] reg_ARID, reg_AWID;
+     
+     always_ff @(posedge ACLK or negedge ARESETn) begin
+          if(~ARESETn) begin
+               reg_ARID <= `AXI_IDS_BITS'b0;
+               reg_AWID <= `AXI_IDS_BITS'b0;
+          end     
+          else begin
+
+               reg_ARID <= (AR_done)? ARID_S: reg_ARID;
+               reg_AWID <= (AW_done)? AWID_S: reg_AWID;
+          end
+     end
+     
+     assign RID_S = reg_ARID;
+     assign BID_S = reg_AWID;
+/*--------------------------- LEN   */
+     logic [`AXI_LEN_BITS-1:0] reg_ARLEN, reg_AWLEN;
+     always_ff @(posedge ACLK or negedge ARESETn)begin
+          if(~ARESETn)begin
+               reg_ARLEN <= `AXI_LEN_BITS'b0;
+               reg_AWLEN <= `AXI_LEN_BITS'b0;
+          end
+          else begin
+               reg_ARLEN <= (AR_done)? ARLEN_S:reg_ARLEN;
+               reg_AWLEN <= (AW_done)? AWLEN_S:reg_AWLEN;
+          end
+     end
+/*--------------------------- CNT   */
+     logic [`AXI_LEN_BITS-1:0] cnt;
+
+     always_ff @(posedge ACLK or negedge ARESETn) begin
+          if(~ARESETn)
+               cnt <= `AXI_LEN_BITS'h0;
+          else begin
+               case(cur_state)
+                    READDATA: cnt <= (RD_done_last)? `AXI_LEN_BITS'b0:((RD_done)? cnt+ `AXI_LEN_BITS'b1:cnt);
+                    WRITEDATA:cnt <= (WD_done_last)? `AXI_LEN_BITS'b0:((WD_done)? cnt+`AXI_LEN_BITS'b1:cnt);
+               endcase
+          end
+
+          
+     end
+     assign RLAST_S = (cnt == reg_ARLEN);
+
+
+/*--------------------------- ROM   */
+     assign RDATA_S = DO;
+//     assign WEB     = WSTRB_S;
+//     assign DI      = WDATA_S;
+
+     always_comb begin
+        case (cur_state)
+            ADDR:
+                OE = ~AWVALID_S & AR_done;
+            READDATA:
+                OE = 1'b1;
+            default : /* default */
+                OE = 1'b0;
+        endcase
+    end
+
+    always_comb begin
+        case (cur_state)
+            ADDR:
+                CS = AWVALID_S | ARVALID_S;
+            default : /* default */
+                CS = 1'b1;
+        endcase
+    end
+
+/*--------------------------- ADDRESS   */
+     logic [13:0] reg_RADDR, reg_WADDR;
+     logic [1:0] A_offset;
+     assign A_offset = (cnt[1:0] == 2'b0)? ((RD_done)? cnt[1:0] + 2'b1: cnt[1:0]):cnt[1:0] + 2'b1;
+
+     always_ff @(posedge ACLK or negedge ARESETn) begin
+        if (~ARESETn) begin
+            reg_RADDR  <= 14'b0;
+            reg_WADDR  <= 14'b0;
+        end
+        else begin
+            reg_RADDR  <= AR_done? ARADDR_S[15:2] : reg_RADDR;
+            reg_WADDR  <= AW_done? AWADDR_S[15:2] : reg_WADDR;
+        end
+     end
+
+     always_comb begin
+        case(cur_state)
+            ADDR:
+                A = (AW_done)? AWADDR_S[15:2]:ARADDR_S[15:2];
+            READDATA:
+                A = (RD_done)? (ARADDR_S[15:2] + cnt + 1) : (ARADDR_S[15:2] + cnt);
+            WRITEDATA:
+                A = reg_WADDR;
+            default:
+                A = ~RES_done? reg_WADDR:(AW_done ? AWADDR_S[15:2]:ARADDR_S[15:2]);
+        endcase
+    end
+
 
 
 

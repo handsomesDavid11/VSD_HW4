@@ -1,13 +1,4 @@
-`include "IF_.sv"
-`include "ID.sv"
-`include "EXE.sv"
-`include "Branch_Ctrl.sv"
-`include "MEM.sv"
-`include "WB.sv"
-`include "Forwarding_Unit.sv"
-`include "Hazard_Ctrl.sv"
-`include "CSR_counter.sv"
-`include "CSR.sv"
+
 
 module CPU(
 	input clk,

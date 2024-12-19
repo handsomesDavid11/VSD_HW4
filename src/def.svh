@@ -9,6 +9,7 @@
 
 // CPU
 `define DATA_BITS 32
+`define ADDR_BITS 32
 `define INS_SIZE 32
 `define NOP 32'b0
 `define DATA_SIZE 32

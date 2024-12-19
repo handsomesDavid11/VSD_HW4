@@ -1,5 +1,5 @@
 // `include "AXI_define.svh"
-`include "../include/AXI_define.svh"
+//`include "../include/AXI_define.svh"
 module DRAM_wrapper (
      input ACLK,
      input ARESETn,

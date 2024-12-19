@@ -1,4 +1,4 @@
-`include "../include/AXI_define.svh"
+//`include "../include/AXI_define.svh"
 
 module SRAM_wrapper (
 	input ACLK,

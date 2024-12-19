@@ -1,6 +1,6 @@
-`include "../include/AXI_define.svh"
-`include "DMA_master.sv"
-`include "DMA_slave.sv"
+//`include "../include/AXI_define.svh"
+//`include "DMA_master.sv"
+//`include "DMA_slave.sv"
 module DMA_wrapper (
 	input clk,
     	input rst,

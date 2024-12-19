@@ -1,5 +1,5 @@
-`include "sync_pulse.sv"
-`include "WDT.sv"
+//`include "sync_pulse.sv"
+//`include "WDT.sv"
 module WDT_wrapper (
     input ACLK,
 	input ARESETn,

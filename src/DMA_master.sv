@@ -1,5 +1,5 @@
-`include "../include/AXI_define.svh"
-`include "FIFO.sv"
+//`include "../include/AXI_define.svh"
+//`include "FIFO.sv"
 module DMA_master (
      input clk,
      input rst,

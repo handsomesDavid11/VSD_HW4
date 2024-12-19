@@ -4,18 +4,26 @@ module tag_array_wrapper (
   input OE,
   input WEB,
   input [4:0] A,
-  input [21:0] DI,
-  output [21:0] DO
+  input [22:0] DI,
+  output [22:0] DO
 );
+  logic [31:0] BWEB;
+  logic [31:0] D;
+  logic [31:0] Q;
+
+
+  assign D = {9'h0,DI};
+  assign DO = Q[22:0] ;
+  assign BWEB = (WEB) ?  32'hffffffff : 32'h0;
 
   TS1N16ADFPCLLLVTA128X64M4SWSHOD_tag_array i_tag_array1 (
     .CLK        (CK),
     .A          (A),
     .CEB        (CS),  // chip enable, active LOW
     .WEB        (WEB),  // write:LOW, read:HIGH
-    .BWEB       (`CACHE_WRITE_BITS'hffff),  // bitwise write enable write:LOW
-    .D          (DI),  // Data into RAM
-    .Q          (DO),  // Data out of RAM
+    .BWEB       (BWEB),  // bitwise write enable write:LOW
+    .D          (D),  // Data into RAM
+    .Q          (Q),  // Data out of RAM
     .RTSEL      (),
     .WTSEL      (),
     .SLP        (),
@@ -24,8 +32,12 @@ module tag_array_wrapper (
     .PUDELAY    ()
   );
 
+
+
+
+
   TS1N16ADFPCLLLVTA128X64M4SWSHOD_tag_array i_tag_array2 (
-    .CLK        (CK),
+    .CLK        (),
     .A          (),
     .CEB        (),  // chip enable, active LOW
     .WEB        (),  // write:LOW, read:HIGH

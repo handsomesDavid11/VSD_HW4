@@ -1,22 +1,7 @@
+
 //////////////////////////////////////////////////////////////////////
-//          ██╗       ██████╗   ██╗  ██╗    ██████╗            		//
-//          ██║       ██╔══█║   ██║  ██║    ██╔══█║            		//
-//          ██║       ██████║   ███████║    ██████║            		//
-//          ██║       ██╔═══╝   ██╔══██║    ██╔═══╝            		//
-//          ███████╗  ██║  	    ██║  ██║    ██║  	           		//
-//          ╚══════╝  ╚═╝  	    ╚═╝  ╚═╝    ╚═╝  	           		//
-//                                                             		//
-// 	2024 Advanced VLSI System Design, advisor: Lih-Yih, Chiou		//
-//                                                             		//
-//////////////////////////////////////////////////////////////////////
-//                                                             		//
-// 	Autor: 			TZUNG-JIN, TSAI (Leo)				  	   		//
-//	Filename:		 AXI.sv			                            	//
-//	Description:	Top module of AXI	 							//
-// 	Version:		1.0	    								   		//
-//////////////////////////////////////////////////////////////////////
-`include "../../include/AXI_define.svh"
-`include "../../include/AXI_include_files.svh"
+//`include "../../include/AXI_define.svh"
+//`include "../../include/AXI_include_files.svh"
 // for synthesize
 // `include "AXI/default_slave.sv"
 // `include "AXI/AR_channel.sv"
