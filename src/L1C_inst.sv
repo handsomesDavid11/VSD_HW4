@@ -14,8 +14,9 @@ module L1C_inst(
 
   input rvalid_m0_i,	// NEW
   input rready_m0_i,  
-  input core_wait_CD_i,  //??
+  input core_wait_CD_i,  
 
+ 
 
   // CPU wrapper to core
   output logic [`DATA_BITS-1:0] core_out,	// im_DO
@@ -99,12 +100,18 @@ module L1C_inst(
     endcase
   end
 
+  always_ff @(posedge clk or posedge rst) begin
+    core_addr_t <= rst? `AXI_ADDR_BITS'h0 : (cur_state == INIT)? core_addr:core_addr_t;
+  end
+
+
+
 // assign index and tag
- //assign index  = (cur_state == INIT) ? core_addr[8:4] : core_addr_t[8:4];  
- //assign TA_in  = (cur_state == INIT) ? core_addr[31:9] : core_addr_t[31:9];
+  assign index  = (cur_state == INIT) ? core_addr[8:4] : core_addr_t[8:4];  
+  assign TA_in  = (cur_state == INIT) ? core_addr[31:9] : core_addr_t[31:9];
  //assign hit    = valid[index] && (TA_in == TA_out) && (cur_state == CHECK);
-  assign index  = core_addr[8:4];
-  assign TA_in  = core_addr[31:9];
+  //assign index  = core_addr[8:4];
+  //assign TA_in  = core_addr[31:9];
   assign hit    = (valid[index] && (TA_in == TA_out))&& (cur_state == CHECK);
   
 
@@ -132,8 +139,10 @@ module L1C_inst(
     
     case(cur_state)
       INIT: begin
-        core_out  = DA_out[{core_addr[3:2], 5'b0}+:32];//data to cpu
-        core_wait = core_req ; // if core require data wait = 1
+        //core_out  = DA_out[{core_addr[3:2], 5'b0}+:32];//data to cpu
+        core_out  = DA_out[{core_addr[3:2], 5'b0}+:32];
+        core_wait = core_req; // if core require data wait = 1
+        
         I_req     = 1'b0;
         I_addr    = `DATA_BITS'b0;
         I_write   = 1'b0;
@@ -141,7 +150,8 @@ module L1C_inst(
         I_type    = `CACHE_TYPE_BITS'b0;
       end
       CHECK: begin
-        core_out  = (hit)?DA_out[{core_addr[3:2], 5'b0}+:32]:`DATA_BITS'b0;//data to cpu
+        core_out  = (hit)?DA_out[{core_addr_t[3:2], 5'b0}+:32]:`DATA_BITS'b0;//data to cpu
+        //core_out  = DA_out[{core_addr[3:2], 5'b0}+:32];
         core_wait = ~hit ; 
         I_req     = 1'b0;
         I_addr    = `DATA_BITS'b0;
@@ -151,7 +161,7 @@ module L1C_inst(
       end
       READ: begin
         if(wait_cnt == 3'b110) begin
-          core_out  = DA_out[{core_addr[3:2], 5'b0}+:32];//data to cpu
+          core_out  = DA_out[{core_addr_t[3:2], 5'b0}+:32];//data to cpu
           core_wait = 1'b0; 
           I_req     = 1'b0;
           I_addr    = core_addr;
@@ -159,9 +169,18 @@ module L1C_inst(
           I_in      = core_in;
           I_type    = core_type;
         end
-        
+        else if(wait_cnt == 3'b101 || wait_cnt == 3'b100)begin
+          core_out  = DA_out[{core_addr_t[3:2], 5'b0}+:32];//data to cpu
+          core_wait = 1'b1; 
+          I_req     = 1'b0;
+          I_addr    = {core_addr_t[`DATA_BITS-1:4], 4'b0};
+          I_write   = 1'b0;
+          I_in      = core_in;
+          I_type    = core_type;
+        end
+
         else begin
-          core_out  = DA_out[{core_addr[3:2], 5'b0}+:32];//data to cpu
+          core_out  = DA_out[{core_addr_t[3:2], 5'b0}+:32];//data to cpu
           core_wait = 1'b1; 
           I_req     = 1'b1;
           I_addr    = {core_addr[`DATA_BITS-1:4], 4'b0};
@@ -196,6 +215,12 @@ module L1C_inst(
       end
       READ: begin
         if(wait_cnt == 3'b110) begin
+          DA_in[{wait_cnt[1:0],5'b0}+:32]    = I_out;
+          DA_write[{wait_cnt[1:0],2'b0}+:4]  = 4'b1111;
+          DA_read   = 1'b1;
+          TA_write  = 1'b1; 
+        end
+        else if(wait_cnt == 3'b101 || wait_cnt == 3'b100)begin
           DA_in[{wait_cnt[1:0],5'b0}+:32]    = I_out;
           DA_write[{wait_cnt[1:0],2'b0}+:4]  = 4'b1111;
           DA_read   = 1'b1;
@@ -274,6 +299,7 @@ module L1C_inst(
   //end
 
 
+  
   
   data_array_wrapper DA(
     .A(index),

@@ -180,22 +180,24 @@ Master IF_stage(
 	.BREADY(BREADY_M0),
 
     // CPU
-	.MEM_access(IM_MEM_access),
-	.WEB(1'b1), // read only
-	.BWEB(4'b1111), // 4 bits
-	.addr(pc_2_IM),
-	.data_in(32'b0),
-	.data_out(inst_IM),
-	.stall(IM_stall)
-
-    //.MEM_access(I_req_m0),
+	//.MEM_access(IM_MEM_access),
 	//.WEB(1'b1), // read only
 	//.BWEB(4'b1111), // 4 bits
-	//.addr(I_addr_m0),
+	//.addr(pc_2_IM),
 	//.data_in(32'b0),
-	//.data_out(I_out_m0),
-	//.stall(I_wait_m0)
+	//.data_out(inst_IM),
+	//.stall(IM_stall)
+
+    .MEM_access(I_req_m0),
+	.WEB(1'b1), // read only
+	.BWEB(4'b1111), // 4 bits
+	.addr(I_addr_m0),
+	.data_in(32'b0),
+	.data_out(I_out_m0),
+	.stall(I_wait_m0),
     //.I_stall(I_wait_m0)
+
+    .cacheEn(1'b1)
 );
 
 Master MEM_stage(
@@ -242,6 +244,7 @@ Master MEM_stage(
 	.BREADY(BREADY_M1),
 
     // CPU
+    
 	.MEM_access(DM_MEM_access),
 	.WEB(DM_WEB),
 	.BWEB(DM_write), // 4 bits
@@ -249,43 +252,46 @@ Master MEM_stage(
 	.addr(DM_addr),
 	.data_in(DM_data_in),
 	.data_out(DM_out),
-	.stall(DM_stall)
+	.stall(DM_stall),
+
+
+    .cacheEn(1'b0)
 );
 
 
 
-//L1C_inst L1CI(
-//    .clk(ACLK),
-//    .rst(~ARESETn),
-//    
-//    //.core_addr(pc_2_IM),
-//    //.core_req(IM_MEM_access),
-//    //.core_write(1'b0),
-//    //.core_in(`DATA_BITS'b0),
-//    //.core_type(`CACHE_WORD),
-//    //
-//    //.I_out(inst_IM),
-//    //.I_wait(IM_stall)
-//    
-//    //cpu
-//    .core_addr(core_addr_m0),
-//    .core_req(1'b1),
-//    //.core_req(core_req_m0),
-//    
-//    .core_write(1'b0),
-//    .core_in(`DATA_BITS'b0),
-//    .core_type(`CACHE_WORD),
-//    ////
-//    .I_out(I_out_m0),
-//    .I_wait(I_wait_m0),
-//    //
-//    .core_out(core_out_m0),
-//    .core_wait(core_wait_m0),
-//    .I_req(I_req_m0),
-//    .I_addr(I_addr_m0)
-//    
-//
-//);
+L1C_inst L1CI(
+    .clk(ACLK),
+    .rst(~ARESETn),
+    
+    //.core_addr(pc_2_IM),
+    //.core_req(IM_MEM_access),
+    //.core_write(1'b0),
+    //.core_in(`DATA_BITS'b0),
+    //.core_type(`CACHE_WORD),
+    //
+    //.I_out(inst_IM),
+    //.I_wait(IM_stall)
+    
+    //cpu
+    .core_addr(core_addr_m0),
+    //.core_req(1'b1),
+    .core_req(core_req_m0),
+    
+    .core_write(1'b0),
+    .core_in(`DATA_BITS'b0),
+    .core_type(`CACHE_WORD),
+    ////
+    .I_out(I_out_m0),
+    .I_wait(I_wait_m0),
+    //
+    .core_out(core_out_m0),
+    .core_wait(core_wait_m0),
+    .I_req(I_req_m0),
+    .I_addr(I_addr_m0)
+    
+
+);
 
 
 
@@ -298,20 +304,16 @@ CPU CPU1(
     .timer_interrupt_flag(timer_interrupt_flag),
 
 
-	.inst_IM(inst_IM),
-    .pc_2_IM(pc_2_IM), // to IM
-    .IM_MEM_access(IM_MEM_access),
-    .IM_stall(IM_stall),
-    //.inst_IM(core_out_m0),
-    //.pc_2_IM(core_addr_m0), // to IM
-    //.IM_MEM_access(core_req_m0),
-    //.IM_stall(core_wait_m0),
+	//.inst_IM(inst_IM),
+    //.pc_2_IM(pc_2_IM), // to IM
+    //.IM_MEM_access(IM_MEM_access),
+    //.IM_stall(IM_stall),
+    .inst_IM(core_out_m0),
+    .pc_2_IM(core_addr_m0), // to IM
+    .IM_MEM_access(core_req_m0),
+    .IM_stall(core_wait_m0),
     //L1IC
-    
     //.L1IC_wait(cache_wait_m0),
-
-
-    
 	.DM_out(DM_out), // from DM
     // to DM
     .DM_addr(DM_addr),

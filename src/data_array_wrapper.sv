@@ -27,6 +27,7 @@ module data_array_wrapper (
     
 
   end
+
   assign En = &WEB;
 
   TS1N16ADFPCLLLVTA128X64M4SWSHOD_data_array i_data_array1_1 (

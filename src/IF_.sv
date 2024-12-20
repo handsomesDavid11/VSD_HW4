@@ -44,7 +44,7 @@ logic [31:0] inst_out_comb;
 // 	.DO	(inst)
 // );
 
-assign IM_MEM_access = 1'b1;
+assign IM_MEM_access = (WFI_stall)? 1'b0:1'b1;
 
 always_ff @(posedge clk or posedge rst) begin : IF_ID_reg
     if (rst) begin

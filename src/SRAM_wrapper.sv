@@ -206,14 +206,14 @@ always_comb begin : addr_control_comb
 			end
 		end 
 		READ: begin
-			if (lens_counter > `AXI_LEN_BITS'b0
-				& RREADY_S & RVALID_S) begin
+			if (RREADY_S & RVALID_S) begin
 				ADDR_comb = ADDR_reg + ADDR_offset;
 			end
 		end
 		WRITE: begin // INCR aligned
 			if (lens_counter > `AXI_LEN_BITS'b0
 				& WREADY_S & WVALID_S) begin
+//			if  (WREADY_S & WVALID_S) begin
 				ADDR_comb = ADDR_reg + ADDR_offset;
 			end
 		end

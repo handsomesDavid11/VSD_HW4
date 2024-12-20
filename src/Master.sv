@@ -48,6 +48,7 @@ module Master (
 	input   [`AXI_ADDR_BITS-1:0] addr,
 	// input   [13:0] addr,
 	input   [`AXI_DATA_BITS-1:0] data_in,
+	input cacheEn,
 	output  logic [`AXI_DATA_BITS-1:0] data_out,
 	output  logic stall,
 	output logic I_stall
@@ -124,7 +125,7 @@ always_comb begin : output_signals
 	// read
 	ARID = `AXI_ID_BITS'b0;
 	ARADDR = addr;
-	ARLEN = `AXI_LEN_BITS'h0;
+	ARLEN = (cacheEn)?`AXI_LEN_BITS'h3:`AXI_LEN_BITS'h0;
 	ARSIZE = `AXI_SIZE_BITS'b10; // 4 bytes = 32 bits
 	ARBURST = `AXI_BURST_INC;
 	ARVALID = 1'b0;

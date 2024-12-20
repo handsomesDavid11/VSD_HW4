@@ -252,7 +252,7 @@ module ROM_wrapper (
             ADDR:
                 A = (AW_done)? AWADDR_S[15:2]:ARADDR_S[15:2];
             READDATA:
-                A = reg_RADDR;
+                A = (RD_done)? (reg_RADDR + cnt + 1) : (reg_RADDR + cnt);
             WRITEDATA:
                 A = reg_WADDR;
             default:

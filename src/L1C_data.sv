@@ -37,8 +37,12 @@ module L1C_data(
   logic [`CACHE_LINES-1:0] valid;
 
   //--------------- complete this part by yourself -----------------//
- 
   
+  
+
+
+
+
   
   data_array_wrapper DA(
     .A(index),
